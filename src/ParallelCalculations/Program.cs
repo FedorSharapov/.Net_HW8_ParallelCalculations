@@ -26,6 +26,35 @@ namespace ParallelCalculations
             stopwatch.Stop();
             ConsoleHelper.WriteLine($"Время выполнения: [{stopwatch.ElapsedMilliseconds}]\r\nРезультат = [{result}]\r\n");
 
+
+            ConsoleHelper.WriteLine($"Размер массива: [{_arraySize}]\r\nМетод вычеления: [параллельный с помощью Thread]");
+            stopwatch.Restart();
+            var chunkNums = numbers.Chunk(_arraySize/_numThreads).ToList();
+            var countdownEvent = new CountdownEvent(chunkNums.Count);
+            result = 0;
+
+            object _locker = new object();
+
+            foreach (var nums in chunkNums)
+            {
+                var action = new Action(() =>
+                {
+                    var res = nums.Sum();
+                    lock(_locker)
+                    {
+                        result += res;
+                    }
+                    countdownEvent.Signal();
+                });
+
+                new Thread(start => action()).Start();
+            }
+
+            countdownEvent.Wait();
+            stopwatch.Stop();
+            countdownEvent.Dispose();
+            ConsoleHelper.WriteLine($"Время выполнения: [{stopwatch.ElapsedMilliseconds}]\r\nРезультат = [{result}]\r\n");
+
             Console.ReadKey();
         }
     }
