@@ -55,6 +55,13 @@ namespace ParallelCalculations
             countdownEvent.Dispose();
             ConsoleHelper.WriteLine($"Время выполнения: [{stopwatch.ElapsedMilliseconds}]\r\nРезультат = [{result}]\r\n");
 
+
+            stopwatch.Restart();
+            ConsoleHelper.WriteLine($"Размер массива: [{_arraySize}]\r\nМетод вычеления: [параллельный с помощью LINQ]");
+            result = numbers.AsParallel().Sum();
+            stopwatch.Stop();
+            ConsoleHelper.WriteLine($"Время выполнения: [{stopwatch.ElapsedMilliseconds}]\r\nРезультат = [{result}]");
+            
             Console.ReadKey();
         }
     }
