@@ -4,65 +4,66 @@ namespace ParallelCalculations
 {
     public class Program
     {
-        static int _arraySize = 10000000;
-        static int _numThreads = 4;
-
-        // ToDo: сделать рефакторинг
-        static void Main(string[] args)
+        /// <summary>
+        /// Сравнение параллельного вычесления суммы с обычным последоватеьным
+        /// </summary>
+        static void Main()
         {
-            if (args != null && args.Length == 1 && !int.TryParse(args[0], out _arraySize))
+            var arraySizes = new int[] { 100000, 1000000, 10000000};
+                        
+            foreach (var size in arraySizes)
             {
-                ConsoleHelper.WriteLineError("Invalid input argument.");
-                return;
+                var array = GenerateArray(size);
+
+                Test(array.MySum, size, "обычный");
+                Test(array.MyParallelSum, size, "параллельный (Thread)");
+                Test(array.AsParallel().Sum, size, "параллельный (LINQ)");
             }
 
-            // генерируем коллекцию чисел
-            IEnumerable<long> numbers = new long().Range(_arraySize);
-
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-            ConsoleHelper.WriteLine($"Размер массива: [{_arraySize}]\r\nМетод вычеления: [обычный]");
-            long result = numbers.Sum();
-            stopwatch.Stop();
-            ConsoleHelper.WriteLine($"Время выполнения: [{stopwatch.ElapsedMilliseconds}]\r\nРезультат = [{result}]\r\n");
-
-
-            ConsoleHelper.WriteLine($"Размер массива: [{_arraySize}]\r\nМетод вычеления: [параллельный с помощью Thread]");
-            stopwatch.Restart();
-            var chunkNums = numbers.Chunk(_arraySize/_numThreads).ToList();
-            var countdownEvent = new CountdownEvent(chunkNums.Count);
-            result = 0;
-
-            object _locker = new object();
-
-            foreach (var nums in chunkNums)
-            {
-                var action = new Action(() =>
-                {
-                    var res = nums.Sum();
-                    lock(_locker)
-                    {
-                        result += res;
-                    }
-                    countdownEvent.Signal();
-                });
-
-                new Thread(start => action()).Start();
-            }
-
-            countdownEvent.Wait();
-            stopwatch.Stop();
-            countdownEvent.Dispose();
-            ConsoleHelper.WriteLine($"Время выполнения: [{stopwatch.ElapsedMilliseconds}]\r\nРезультат = [{result}]\r\n");
-
-
-            stopwatch.Restart();
-            ConsoleHelper.WriteLine($"Размер массива: [{_arraySize}]\r\nМетод вычеления: [параллельный с помощью LINQ]");
-            result = numbers.AsParallel().Sum();
-            stopwatch.Stop();
-            ConsoleHelper.WriteLine($"Время выполнения: [{stopwatch.ElapsedMilliseconds}]\r\nРезультат = [{result}]");
-            
             Console.ReadKey();
+        }
+
+        /// <summary>
+        /// Генерация массива случайных чисел
+        /// </summary>
+        /// <param name="size">разер массива</param>
+        /// <returns>массив случайных чисел</returns>
+        public static int[] GenerateArray(int size)
+        {
+            var array = new int[size];
+            var range = int.MaxValue / size;
+
+            Random random = new Random();
+            for (int i = 0; i < size; i++)
+                array[i] = random.Next(-range, range);
+           
+            return array;
+        }
+
+        /// <summary>
+        /// Тестирование быстродействия выполнения функции
+        /// </summary>
+        /// <param name="func">функция для теста</param>
+        private static void Test(Func<int> func, int arraySize, string name)
+        {
+            long sum = 0;
+            var stopwatch = new Stopwatch();
+
+            ConsoleHelper.WriteLine($"Размер массива: [{arraySize}]");
+            ConsoleHelper.WriteLine($"Метод выполнения: [{name}]");
+            for (int j = 1; j < 11; j++)
+            {
+                stopwatch.Restart();
+
+                var result = func();
+
+                stopwatch.Stop();
+                sum += stopwatch.ElapsedMilliseconds;
+                ConsoleHelper.WriteLine($"{j}.Результат: [{result}]. Время выполнения: [{stopwatch.ElapsedMilliseconds}]");
+            }
+
+            double meanVal = ((sum / 10.0));
+            ConsoleHelper.WriteLine($"Среднее время выполнения: [{meanVal:F1}] мс\r\n",ConsoleColor.Green);
         }
     }
 }
