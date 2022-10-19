@@ -13,6 +13,7 @@ namespace ParallelCalculations
                         
             foreach (var size in arraySizes)
             {
+                //var array = Enumerable.Repeat(1, size).ToArray();       // проверка расчета суммы
                 var array = GenerateArray(size);
 
                 Test(array.MySum, size, "обычный");
@@ -35,7 +36,7 @@ namespace ParallelCalculations
 
             Random random = new Random();
             for (int i = 0; i < size; i++)
-                array[i] = random.Next(-range, range);
+                array[i] = random.Next(0, range);
            
             return array;
         }
